@@ -1,0 +1,23 @@
+Production_list ::= {Production_item ...}+;
+Production_item ::= Production_name "::=" A_production ";";
+A_production ::= Choice_construct | Aggregate_construct |
+                 Repetition_construct;
+Aggregate_construct ::= {Construct_item ...}+;
+Choice_construct ::= {Construct_item "|" ...}2;
+Repetition_construct ::= "{" Construct_item 
+                         [Repetition_separator] "..." "}"
+                         [Repetition_multiplicity];
+Repetition_multiplicity ::= "+" | Repetition_cardinality; 
+Construct_item ::= Optional_construct |  
+                   Non_optional_construct;
+Optional_construct ::= "[" Construct_value "]";
+Non_optional_construct ::= Construct_value;
+Construct_value ::= Name_construct | Keyword_construct; 
+Name_construct ::= Identifier;
+Keyword_construct ::= Simple_string;
+Production_name ::= Identifier;
+Repetition_cardinality ::= Multiplicity_integer; 
+Repetition_separator ::= Separator | 
+                         Optional_repetition_separator;
+Optional_repetition_separator ::= "[" Separator "]" ;
+Separator ::= Simple_string;

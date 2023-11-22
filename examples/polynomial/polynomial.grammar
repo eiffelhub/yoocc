@@ -1,0 +1,9 @@
+LINE ::=  VARIABLES ":" SUM; 
+VARIABLES ::=  {VAR ";" ...}+; 
+SUM ::=  {DIFF "+" ...}+; 
+DIFF ::=  {PRODUCT "-" ...}+; 
+PRODUCT ::= {TERM "*" ...}+;
+TERM ::= SIMPLE_VAR | INT_CONSTANT | NESTED;
+NESTED ::= "(" SUM ")"; 
+VAR ::= IDENTIFIER;
+SIMPLE_VAR ::= IDENTIFIER;

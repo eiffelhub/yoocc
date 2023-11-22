@@ -1,0 +1,27 @@
+system
+	yoocc	
+root
+
+	yoocc (ROOT_CLUSTER): "make"
+
+default
+--	debug ("parse");
+	assertion (require);
+	precompiled ("$EIFFEL3/precomp/spec/solaris/base");
+
+cluster
+
+	ROOT_CLUSTER:		"$YOOCC/Tool";
+	lex:			"$EIFFEL3/library/lex";
+	lexical:		"$YOOCC/lexical";
+	semantics:		"$YOOCC/semantics";
+	constructs:		"$YOOCC/constructs";
+	syntax:			"$YOOCC/syntax";
+	parse:			"$YOOCC/extended_parse";
+	patterns:		"$YOOCC/patterns";
+
+external
+
+	object: "$(EIFFEL3)/library/lex/spec/$(PLATFORM)/lib/lex.a"
+
+end

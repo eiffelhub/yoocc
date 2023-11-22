@@ -1,0 +1,430 @@
+YOOCC - Yes! An Object-oriented Compiler Compiler.
+--------------------------------------------------
+
+Authors: Jon Avotins and Glenn Maughan
+Date: $Date: 1995/05/08 16:16:06 $
+
+Contents.
+---------
+
+0.	Introduction
+1.	Terms and Conditions
+2.	Installation
+ 2.1	Extraction
+ 2.2    Compilation
+ 2.3	Platforms
+3.	Use
+ 3.1	Developing a Parser
+ 3.2	Debugging Enhancements
+4.	Performance
+5.	The Future
+6.	Acknowledgment Form
+7.	Bug Report Form
+
+
+0. Introduction
+---------------
+
+YOOCC provides a Compiler Compiler written entirely in Eiffel that
+utilises an extended parse library which evolved from the ISE EiffelParse 
+library.  YOOCC presents the programmer with a tool for automatically 
+generating a processor framework (Eiffel source code) from a grammar.  
+The approach reconciles object-oriented principles, processor generation, 
+and an object-oriented language (Eiffel).
+
+1. Terms and Conditions
+-----------------------
+
+                         Copyright (C) 1995
+   Monash University, Department of Software Development, Australia
+
+                    YOOCC GENERAL PUBLIC LICENSE
+
+It   is permitted to   copy and  distribute   verbatim copies of  this
+license, but altering it is not allowed.
+
+The following terms describe the limitations on copying, distributing,
+using, or  altering YOOCC software  and those classes  and files which
+are protected by this license.
+
+1. You may copy and distribute verbatim copies of YOOCC source classes
+and files and the executable YOOCC as received  and generated from the
+distribution, in  any   medium, provided that  you   conspicuously and
+appropriately publish  on each copy  a valid  copyright notice of  the
+form "Copyright (C) Monash University 1995" with the appropriate year;
+keep  intact  the notices on   all files that   refer  to this License
+Agreement  and the absence  of any warranty and  the  list of original
+authors of each class; and give  any other recipients of any protected
+YOOCC  source classes,  files and executable   a copy of  this License
+Agreement along with the program.
+
+2. You may modify your copy or copies of  YOOCC library source classes
+or any portion of it, and copy and distribute such modifications under
+the terms  of  Paragraph 1 above,  provided  that you  also  cause the
+modified files to carry prominent notices stating that you changed the
+files and the date of any change.  If program binaries are distributed
+or  sold which   are based in   part  on modified  classes, then  such
+modified classes  must be made  freely available in  source code form.
+No restriction is placed  on any new classes  which may be written and
+used  in conjunction  with  YOOCC library  classes, though authors are
+encouraged to make   them also  available  under  the  terms of   this
+license.
+
+3. You may  use the YOOCC source  classes, files and executable in any
+program for any purposes provided that you:
+
+  a) Include in any documentation describing the program the notice:
+  "This program is  based  in part on  YOOCC  (Yes! An  OO  Compiler
+  Compiler) written by Jon  Avotins and Glenn Maughan and associated
+  source  classes and files, which  is distributed free of charge by
+  Monash University,  Software  Development Department, 900 Danenong
+  Road, Caulfield East,    Victoria  3145 Australia,   which may  be
+  obtained  by      anonymous     ftp   from    the    WWW      site
+  "http://insect.sd.monash.edu.au/~yoocc/""
+
+  b) Include  in any documentation  describing YOOCC a list of names
+  acknowledging the original authors of YOOCC.
+
+  c) Acknowledge the  use of YOOCC and YOOCC  library classes in any
+  description  of the  program  including commercial  advertising or
+  articles in scientific journals, or any other publications.
+
+4. You  may  not copy,  sublicense, distribute or  transfer  protected
+YOOCC library classes except as expressly  provided under this License
+Agreement.  Any  attempt otherwise to  copy, sublicense, distribute or
+transfer YOOCC classes and executable, is void and your rights to them
+under this   License  agreement shall  be   automatically  terminated.
+However, parties who have received computer software programs from you
+with this License Agreement will not have their licenses terminated so
+long as such parties remain in full compliance.
+
+
+			   NO WARRANTY
+
+BECAUSE THE YOOCC LIBRARIES AND EXECUTABLE COVERED BY THIS LICENSE
+ARE LICENSED FREE OF CHARGE, WE PROVIDE ABSOLUTELY NO WARRANTY, TO
+THE EXTENT  PERMITTED  BY APPLICABLE  LAW.  EXCEPT  WHEN OTHERWISE
+STATED IN WRITING, MONASH  UNIVERSITY AND/OR OTHER PARTIES PROVIDE
+YOOCC, AND THE  YOOCC LIBRARIES "AS  IS"  WITHOUT WARRANTY  OF ANY
+KIND, EITHER EXPRESSED OR IMPLIED,  INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES    OF  MERCHANTABILITY AND  FITNESS   FOR A
+PARTICULAR   PURPOSE.   THE  ENTIRE  RISK AS    TO THE QUALITY AND
+PERFORMANCE    OF THE PROGRAM IS   WITH  YOU.   SHOULD THE LIBRARY
+CLASSES  PROVE DEFECTIVE,  YOU ASSUME THE   COST  OF ALL NECESSARY
+SERVICING, REPAIR OR CORRECTION.
+
+IN NO EVENT  UNLESS    REQUIRED BY  APPLICABLE  LAW   WILL  MONASH
+UNIVERSITY AND/OR ANY OTHER PARTY WHO  MAY MODIFY AND REDISTRIBUTE
+YOOCC AND THE YOOCC CLASSES  AS PERMITTED ABOVE,  BE LIABLE TO YOU
+FOR DAMAGES,  INCLUDING  ANY LOST PROFITS,  LOST  MONIES, OR OTHER
+SPECIAL,  INCIDENTAL OR CONSEQUENTIAL  DAMAGES ARISING  OUT OF THE
+USE OR INABILITY TO USE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA
+OR DATA BEING RENDERED INACCURATE   OR LOSSES SUSTAINED BY   THIRD
+PARTIES OR A FAILURE OF THE LIBRARIES TO OPERATE WITH PROGRAMS NOT
+DISTRIBUTED BY  MONASH UNIVERSITY) THE  PROGRAM, EVEN  IF YOU HAVE
+BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES,  OR FOR ANY CLAIM
+BY ANY OTHER PARTY.
+
+2. Installation
+---------------
+
+2.1 Extraction
+--------------
+
+YOOCC is distributed in source form.  To extract the source untar the
+distribution file into a directory, such as ~/Development.  Eg:
+
+		mkdir Development
+		cd Development
+	
+	If using gnu tar:
+		
+		tar foxz yoocc.tar.Z
+
+	or with standard tar:
+
+		uncompress yoocc.tar.Z
+		tar fox yoocc.tar
+
+The distribution will create a number of directories:
+
+	YOOCC 			-- the source code for YOOCC.
+	YOOCC/extended_parse	-- a version of EiffelParse with a number of
+				   extensions.
+	YOOCC/patterns		-- containing a pattern for displaying
+				   recursively indented information.
+		
+The "extended_parse" library is essential.  YOOCC will not compile
+and run correctly with the standard ISE Parse library.  A number of
+enhancements have been made to the ISE Parse library and stored in
+a patch file entitled "extended_parse_patch".  
+
+In order to reproduce our extended parse library, the following steps
+need to be made: 
+
+In order to keep the original ISE Parse library intact you should apply the patch 
+to a local copy of the ISE Eiffel Parse library.  To do this, execute the following 
+commands: 
+
+	cd YOOCC/extended_parse
+	cp $EIFFEL3/library/parse/*.e . 
+
+o	Apply the patch to the ISE parse library using the following command: 
+
+	cd YOOCC/extended_parse
+	patch < extended_parse_patch 
+
+o	Remove all redundant files with an extension of ".orig". 
+
+NB. After application of the patch, if there are any files with a
+".rej" extension, then the patch has failed.  You may need to
+apply manual patches using the "extended_parse_patch" file.
+
+
+2.2 Compilation
+---------------
+
+To compile the system you need Eiffel installed (of course).  The
+source has been developed with ISE Eiffel version 3.2.8   It should
+compile without problems on this version and any later versions.
+
+Compilation depends on the setup of your Eiffel installation.
+Typically you will have the base libraries precompiled.  We also
+precompile the base libraries with the lex libraries.  However, this
+is for convenience only --- it saves on freezing.
+
+Check the Ace file in the directory: Yoocc.  Make sure it specifies
+the correct precompilation option according to your setup.
+
+It should read either:
+
+	precompile ("$EIFFEL3/precomp/spec/$PLATFORM/base")
+
+or
+
+	precompile ("$EIFFEL3/precomp/spec/$PLATFORM/baselex")
+
+if you have base + lex precompiled in the directory baselex.  You may
+also change this to mvision to use the precompiled base + vision
+libraries.  You get the idea...
+
+The Ace files have been written with the assumption that the
+environment variable YOOCC is set to the directory you extracted the
+source into.
+
+Set this with either:
+
+	setenv YOOCC ~/Development
+
+for csh/tcsh shells or
+
+	YOOCC="~/Development"
+	export YOOCC
+
+for sh/bash shells.
+
+Compile the source as normal using either ebench or es3.  The
+compilation process may need to freeze depending on your
+precompilation options.
+
+2.3 Platforms
+-------------
+
+YOOCC has been compiled successfully on Solaris, Ultrix and Linux
+platforms.  It is written entirely in Eiffel therefore is should run
+on all supported platforms.  With one (possible) exception:  MS-Windows.
+
+Currently YOOCC hasn't been compiled on an MS-Windows platform.  It
+probably won't run on this platform because of the use of "long"
+filenames.  But we are yet to test it...
+
+3. Use
+------
+
+The best description of how to use YOOCC can be found in the paper:
+
+	YOOCC: Yes! An Object-oriented Compiler Compiler
+	Jon Avotins, Christine Mingins and Heinz Schmidt
+
+Available in either the:
+
+	Proceedings of TOOLS USA '95, Santa Barbara, 
+	Prentice Hall 1995 
+
+or:
+
+	Technical Report.
+        Department of Software Development.
+        Monash University.
+	<http://insect.sd.monash.edu.au:/>
+
+This section describes the quick way to get started.  You should refer
+to the paper for more detail.
+
+3.1 YOOCC Command Parameters
+----------------------------
+
+YOOCC (Version 1.0).    (C) Jon Avotins and Glenn Maughan 1995.
+                            Monash University.
+
+SYNOPSIS
+        yoocc -p<file> -g<file> [-d<directory>] [-k] [-t]
+
+OPTIONS
+        The following options apply to yoocc:
+        -p      Processor name.
+        -g      Grammar file to parse.
+        -d      Destination directory for generated processor.
+        -k      Case sensitive keywords in lexical analyzer.
+        -t      Case sensitive tools in lexical analyzer.
+
+NOTE:   If the destination directory is not supplied, the processor will 
+        be generated in the current working directory.
+
+3.2 Developing a Parser
+-----------------------
+
+The following steps are required to generate a parser with YOOCC:
+
+	1. Define the processor grammar.
+
+	2. Run YOOCC on the grammar to generate classes for
+	constructs and syntax.  Also to generate skeleton classes for 
+	the lexical analyzer and the parser root class.
+
+	3. Complete the coding of the lexical analyzer.  This involves
+	defining token types for any tokens required in the parser.
+
+	4. Define semantic actions for interesting constructs.
+
+	5. Compile and test the parser.
+
+There are also some other minor activities required which
+include environment variable setting, copy files from one
+directory to another and possibly modifying the Ace file
+to take into consideration local libraries.  These are
+presented to the processor generator after Step 2 directly
+above has completed.
+
+3.3 Debugging Enhancements
+--------------------------
+
+A debug switch can be turned on to help debugging a parser once it has
+been compiled.  The switch will display the parsing process as it
+occurs.  To turn on this switch add (or uncomment) the following line
+in YOOCC's Ace file:
+
+	debug ("parse")
+
+Also you can display the parse tree once parsing has been completed
+successfully.  Add the following code to your parser:
+
+	if root_line.parsed then
+		root_line.display (io.output)
+	end
+
+This will display the parse tree to stdout.  If you want to store the
+parse tree in a file replace io.output with a file object:
+
+	!! file.make_open_read ("my_tree")
+	if root_line.parsed then
+		root_line.display (file)
+	end
+
+4. Performance
+--------------
+
+YOOCC will perform at its best if you finalise the system.  When you
+finalise make sure you comment out any precompile option's and debug
+options in the Ace file.  Also delete the EIFGEN directory before
+compiling to make sure finalisation is as optimal as possible.
+
+The performance of your generated parsers will vary greatly depending
+on the number and complexity of your constructs.  However, it is
+recommended to use the INPUT class from the Extended_parse cluster as
+it contains a number of enhancements that may or may not be
+incorporated into your current ISE library versions.
+
+5. The Future
+-------------	
+
+This is the first release of YOOCC.  As such it provides a very
+useful tool for automatically generating parsing classes.  However,
+it does need more work and features to become a fully functioning
+compiler compiler.
+
+The enhancements that we (currently) envisage include:
+
+	o The ability to add semantic information to the grammar and
+	therefore to the constructs automatically.
+	
+	o Front end for YOOCC, either a cleaner textual one or GUI.
+
+	o Extending the EiffelParse libraries to cater for LALR(1)
+	grammars instead of just LL(1).
+
+	o The Eiffel lexical library 3.2.8 had a bug in it which
+	did not allow the lexical analyzer to be stored and retrieved. 
+	Hence why "store_analyzer (analyzer_file_name)" has been
+	commented out of the root class for both the processors 
+	generated by YOOCC, and YOOCC itself.  When this bug is 
+	fixed, just decomment this line to enhance execution 	
+	efficiency.
+
+	o others as mentioned in the YOOCC TOOLS paper.
+
+Of course we have only limited time on our hands.  So we are asking
+for your help.  Any contributions, ideas, bug fixes etc., that you may
+have are more than welcome.  We can work towards developing a well
+rounded and useful tool.  If you extend YOOCC for your own uses please
+let us know.
+
+6. Acknowledgment
+----------------
+
+Mail to yoocc@insect.sd.monash.edu.au
+--------------------------------------------------------------
+Name: 
+Email:
+
+I used YOOCC for:
+
+
+I thought YOOCC was: 
+
+	useful 		/ 	not useful
+
+For the following reasons:
+
+
+---------------------------------------------------------------
+
+7. Bug/Enhancement Report
+-------------------------
+
+Mail to yoocc@insect.sd.monash.edu.au
+---------------------------------------------------------------
+Name: 
+Email:
+
+Platform:
+Version of YOOCC:
+
+Description of problem:
+
+
+Example code:
+
+
+Suggested fix:
+
+
+
+----------------------------------------------------------------
+
+
+
+
+
+
+

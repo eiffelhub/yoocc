@@ -1,0 +1,60 @@
+			if info.root_class_name.is_equal (upper_string_value) then
+				io.putstring ("%NError (");
+				io.putint (token.line_number);
+				io.putstring (",");
+				io.putint (token.column_number);
+				io.putstring ("): Production_name same as processor name.%N");
+			end;
+			if info.lex_constants_class_name.is_equal (upper_string_value) then
+				io.putstring ("%NError (");
+				io.putint (token.line_number);
+				io.putstring (",");
+				io.putint (token.column_number);
+				io.putstring ("): Production_name same as lexical constants class name.%N");
+			end;
+			if info.lex_class_name.is_equal (upper_string_value) then
+				io.putstring ("%NError (");
+				io.putint (token.line_number);
+				io.putstring (",");
+				io.putint (token.column_number);
+				io.putstring ("): Production_name same as lexical class class name.%N");
+		
+			end;
+			if info.semantic_class_name.is_equal (upper_string_value) then
+				io.putstring ("%NError (");
+				io.putint (token.line_number);
+				io.putstring (",");
+				io.putint (token.column_number);
+				io.putstring ("): Production_name same as semantics class name.%N");
+			end
+			if info.root_class_name.is_equal (syntax_production_name) then
+				io.putstring ("%NError (");
+				io.putint (token.line_number);
+				io.putstring (",");
+				io.putint (token.column_number);
+				io.putstring ("): Syntax of Production_name same as processor name.%N");
+			end;
+			if info.lex_constants_class_name.is_equal (upper_string_value) then
+				io.putstring ("%NError (");
+				io.putint (token.line_number);
+				io.putstring (",");
+				io.putint (token.column_number);
+				io.putstring ("): Production name same as lexical constants class name.%N");
+			end;
+			if info.lex_class_name.is_equal (upper_string_value) then
+				io.putstring ("%NError (");
+				io.putint (token.line_number);
+				io.putstring (",");
+				io.putint (token.column_number);
+				io.putstring ("): Production name same as lexical class class name.%N");
+		
+			end;
+			if info.semantic_class_name.is_equal (upper_string_value) then
+				io.putstring ("%NError (");
+				io.putint (token.line_number);
+				io.putstring (",");
+				io.putint (token.column_number);
+				io.putstring ("): Production name same as semantics class name.%N");
+			end
+
+		end; -- valid_production_name

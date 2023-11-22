@@ -1,0 +1,2341 @@
+diff -c -P /opt/Eiffel3/library/parse/aggregate.e ./aggregate.e
+*** /opt/Eiffel3/library/parse/aggregate.e	Mon Aug 14 13:53:16 1995
+--- ./aggregate.e	Fri Aug 18 14:51:57 1995
+***************
+*** 6,12 ****
+  		%of zero or more specified constructs";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 90/08/30 20:37:27 $";
+  	revision: "$Revision: 1.3 $"
+  
+  deferred class AGGREGATE inherit
+--- 6,12 ----
+  		%of zero or more specified constructs";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 1995/08/18 02:28:05 $";
+  	revision: "$Revision: 1.3 $"
+  
+  deferred class AGGREGATE inherit
+***************
+*** 15,21 ****
+  		rename
+  			is_leaf as no_components
+  		redefine
+! 			commit
+  		end
+  
+  feature -- Status report 
+--- 15,23 ----
+  		rename
+  			is_leaf as no_components
+  		redefine
+! 			commit,
+! 			parse_body,
+! 			expand_next
+  		end
+  
+  feature -- Status report 
+***************
+*** 47,54 ****
+  			structure_list.search (production);
+  			structure_list.remove;
+  			structure_list.go_i_th (0)
+! 		end
+! 
+  feature -- Transformation 
+  
+  	commit is
+--- 49,56 ----
+  			structure_list.search (production);
+  			structure_list.remove;
+  			structure_list.go_i_th (0)
+! 		end; -- left_recursion
+!    
+  feature -- Transformation 
+  
+  	commit is
+***************
+*** 59,66 ****
+  		do
+  			has_commit := true;
+  			commit_value := production.index - 1
+! 		end
+! 
+  	has_commit: BOOLEAN
+  			-- Is current aggregate committed?
+  
+--- 61,68 ----
+  		do
+  			has_commit := true;
+  			commit_value := production.index - 1
+! 		end; -- commit
+!  
+  	has_commit: BOOLEAN
+  			-- Is current aggregate committed?
+  
+***************
+*** 69,77 ****
+  
+  	commit_value: INTEGER;
+  			-- Threshold of successfully parsed subconstructs
+! 			-- above which the construct is commited
+! 
+! 
+  	expand is
+  			-- Expand the next field of the aggregate.
+  		do
+--- 71,78 ----
+  
+  	commit_value: INTEGER;
+  			-- Threshold of successfully parsed subconstructs
+! 			-- above which the construct is commited.
+!    
+  	expand is
+  			-- Expand the next field of the aggregate.
+  		do
+***************
+*** 79,121 ****
+  			if has_commit and commit_value < child_index then
+  				committed := true
+  			end
+! 		end;
+! 
+! 	parse_body is
+! 			-- Attempt to find input matching the components of
+! 			-- the aggregate starting at current position.
+! 			-- Set parsed to true if successful.
+! 		require else
+! 			no_child: no_components
+! 		local
+! 			wrong: BOOLEAN;
+! 			err: STRING
+! 		do
+! 			from
+! 				expand
+! 			until
+! 				wrong or no_components or child_after
+! 			loop
+! 				parse_child;
+! 				wrong :=  not child.parsed;
+! 				if not wrong then
+! 					expand
+! 				end
+! 			end;
+! 			complete := not wrong
+! 			from
+! 				child_start
+! 			until
+! 				no_components or child_after
+! 			loop
+! 				if child.is_optional and then child.parsed and then not child.complete then
+! 					remove_child
+! 				else
+! 					child_forth
+! 				end
+! 			end
+! 		end;
+! 
+  	in_action is
+  			-- Perform semantics of the child constructs.
+  		do
+--- 80,87 ----
+  			if has_commit and commit_value < child_index then
+  				committed := true
+  			end
+! 		end; -- expand
+!    
+  	in_action is
+  			-- Perform semantics of the child constructs.
+  		do
+***************
+*** 127,136 ****
+  				child.semantics;
+  				child_forth
+  			end
+! 		end
+! 
+! feature {CONSTRUCT} -- Implementation
+! 
+  	check_recursion is
+  			-- Check the aggregate for left recursion.
+  		local
+--- 93,102 ----
+  				child.semantics;
+  				child_forth
+  			end
+! 		end; -- in_action
+!    
+! feature {CONSTRUCT,TROOPER,YOOCC} -- Implementation
+!    
+  	check_recursion is
+  			-- Check the aggregate for left recursion.
+  		local
+***************
+*** 182,189 ****
+  				child_forth
+  			end;
+  			io.new_line
+! 		end;
+! 
+  	print_child is
+  			-- Print active child name,
+  			-- with square brackets if optional.
+--- 148,155 ----
+  				child_forth
+  			end;
+  			io.new_line
+! 		end; -- print_children
+!    
+  	print_child is
+  			-- Print active child name,
+  			-- with square brackets if optional.
+***************
+*** 195,201 ****
+  			if child.is_optional then
+  				io.put_character (']')
+  			end
+! 		end
+  
+  end -- class AGGREGATE
+   
+--- 161,264 ----
+  			if child.is_optional then
+  				io.put_character (']')
+  			end
+! 		end; -- print_child
+!    
+! feature {ANY} -- Displaying
+!    
+!    display_indented (file: IO_MEDIUM; level: INTEGER) is
+! 	 -- Display this construct and all 
+! 	 -- of its subconstructs at indent level
+! 	 -- 'level'.
+!       do
+! 	 from
+! 	    child_start;
+! 	    display_indent (file, level);
+! 	    file.putstring (construct_name);
+! 	    file.putstring (" {AGGREGATE}");
+! 	    file.new_line;
+! 	 until
+! 	    no_components or child_after
+! 	 loop
+! 	    child.display_indented (file, level + Indent_step);
+! 	    child_forth
+! 	 end;
+!       end;	
+!    
+! feature {NONE} -- Implementation
+!    
+!    parse_body (level: INTEGER) is
+! 	 -- Attempt to find input matching the components of
+! 	 -- the aggregate starting at current position.
+! 	 -- Set parsed to true if successful.
+!       require else
+! 	 no_child: no_components
+!       local
+! 	 wrong: BOOLEAN;
+! 	 err: STRING
+!       do
+! 	 from	
+! 	    expand
+! 	 until
+! 	    wrong or no_components or child_after
+! 	 loop
+! 	    parse_child (level + 1);
+! 	    wrong :=  not child.parsed;
+! 	    if not wrong then
+! 	       expand
+! 	    end
+! 	 end;
+! 	 complete := not wrong
+! 	 -- remove optional constructs from the tree if they parsed
+! 	 -- but are not complete
+! 	 from 
+! 	    child_start
+! 	 until
+! 	    no_components or child_after 
+! 	 loop
+! 	    if child.is_optional and then
+! 	       child.parsed and then not child.complete then
+! 	       remove_child
+! 	    else
+! 	       child_forth
+! 	    end
+! 	 end 
+!       end;
+! 
+! 	production_position: INTEGER;
+! 		-- Position expanded to in production
+! 		-- As expand_next was originally dependent upon
+! 		-- the number_of_children as an indicator of which
+! 		-- position in the construction the parser was up to
+! 		-- and the addition of global_optionals,  expand_next
+! 		-- had to be redefined and a production_position
+! 		-- stored that indicated the position in the production the
+! 		-- parser was up to.
+!    
+!    expand_next is
+! 	 -- Expand the next child of current node
+! 	 -- after current child.
+! 	 -- This is the most likely version of expand
+! 	 -- for types of construct where each subconstruct
+! 	 -- must be expanded in turn.
+!       local
+! 	 n: CONSTRUCT
+!       do
+! 	 if not production.empty then
+! 	    production_position := production_position + 1;
+! 	    production.go_i_th (production_position);
+! 	    if not production.after then
+! 	       n := clone (production.item);
+! 	       put_component (n)
+! 	    else
+! 	       child_finish;
+! 	       child_forth
+! 	    end
+! 	 else
+! 	    child_finish;
+! 	    child_forth
+! 	 end
+!       end;
+! 
+  
+  end -- class AGGREGATE
+   
+diff -c -P /opt/Eiffel3/library/parse/aggregate_one.e ./aggregate_one.e
+*** /opt/Eiffel3/library/parse/aggregate_one.e	Thu Jan  1 10:00:00 1970
+--- ./aggregate_one.e	Fri Aug 18 14:51:57 1995
+***************
+*** 0 ****
+--- 1,125 ----
++ indexing
++ 	description: "Constructs whose specimens are obtained by %
++ 		% concatenating specimens of constructs of one or %
++ 		% more specified constructs. At least one of the %
++ 		% constructs must be present."
++    
++ deferred class AGGREGATE_ONE inherit
++    
++ 	AGGREGATE
++ 		redefine
++ 			parse_body, display_indented
++ 		end
++    
++ feature {NONE} -- Implementation
++    
++ 	parse_body (level: INTEGER) is
++ 			-- Attempt to find input matching the components of
++ 			-- the aggregate starting at current position.
++ 			-- The construct must have at least one of its optional
++ 			-- constructs to parse successfully.
++ 			-- Set parsed to true if successful.
++ 		require else
++ 			no_child: no_components
++ 		local
++ 			wrong: BOOLEAN;
++ 			err: STRING
++ 		do
++ 			-- parse each component of the aggregate
++ 			from        
++ 				expand
++ 			until
++ 				wrong or no_components or child_after
++ 			loop
++ 				parse_child (level + 1);
++ 				wrong :=  not child.parsed;
++ 				if not wrong then
++ 					expand
++ 				end
++ 			end;
++ 			-- determine whether the parse operation was successful
++ 			if not wrong then
++ 				complete := is_child_complete
++ 			else
++ 				-- something went wrong in the initial 
++ 				-- parse dont worry about checking the 
++ 				-- children.
++ 				complete := False
++ 			end
++ 			remove_incomplete_optionals
++ 		end; -- parse_body
++    
++ 	is_child_complete: BOOLEAN is
++ 			-- Has one of the child constructs been 
++ 			-- parsed successfully and completely?
++ 		do
++ 			from
++ 				child_start
++ 				Result := False
++ 			until
++ 				no_components or child_after or Result
++ 			loop  
++ 				-- Find at least one optional construct 
++ 				-- that has parsed and is successful.
++ 				if child.parsed and then child.complete then
++ 					Result := True
++ 				end
++ 				child_forth
++ 			end
++ 		end; -- is_child_complete
++    
++ 	remove_incomplete_optionals is
++ 			-- Remove optional components that parsed but 
++ 			-- are not complete.
++ 		do
++ 			from 
++ 				child_start
++ 			until
++ 				no_components or child_after 
++ 			loop
++ 				if child.is_optional and then child.parsed and then not child.complete then
++ 					remove_child
++ 				else 
++ 					child_forth 
++ 				end
++ 			end 
++ 		end; -- remove_incomplete_optionals
++ 
++ feature {ANY} -- Displaying
++    
++ 	display_indented (file: IO_MEDIUM; level: INTEGER) is
++ 			-- Display this construct and all of its 
++ 			-- subconstructs at indent level 'level'.
++ 		do
++ 			from
++ 				child_start;
++ 				display_indent (file, level);
++ 				print_name;
++ 				file.putstring (" {AGGREGATE_ONE}");
++ 				file.new_line;
++ 			until
++ 				no_components or child_after
++ 			loop
++ 				child.display_indented (file, level + Indent_step);
++ 				child_forth
++ 			end;
++ 		end; -- display_indented
++     
++ end -- class AGGREGATE_ONE
++    
++ 
++ 
++ --|----------------------------------------------------------------
++ --| YOOCC: Yes! An Object-Oriented Compiler Compiler. 
++ --| Copyright (C) 1995, Monash University
++ --| All rights reserved. 
++ --|
++ --| Monash University, Caulfield Campus
++ --| Department of Software Development
++ --| PO Box 197, Caulfield East
++ --| Melbourne, Australia 3145
++ --|
++ --| Phone: +61-3-99032787 Fax: +61-3-99032745
++ --| Email: <yoocc@insect.sd.monash.edu.au>
++ --|----------------------------------------------------------------
++ 
+diff -c -P /opt/Eiffel3/library/parse/choice.e ./choice.e
+*** /opt/Eiffel3/library/parse/choice.e	Mon Aug 14 13:53:16 1995
+--- ./choice.e	Fri Aug 18 14:51:57 1995
+***************
+*** 5,11 ****
+  		%chosen among a specified list.";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 90/10/11 17:23:55 $";
+  	revision: "$Revision: 1.3 $"
+  
+  deferred class CHOICE inherit
+--- 5,11 ----
+  		%chosen among a specified list.";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 1995/08/18 01:49:30 $";
+  	revision: "$Revision: 1.3 $"
+  
+  deferred class CHOICE inherit
+***************
+*** 14,19 ****
+--- 14,21 ----
+  		rename
+  			put_component as branch,
+  			is_leaf as no_components
++ 		redefine
++ 			parse_global_optionals
+  		end
+  
+  feature -- Access
+***************
+*** 28,38 ****
+  			-- Is the construct's definition left-recursive?
+  		do
+  			if structure_list.has (production) then
+! 				global_left_recursion.put (true);
+! 				child_recursion.put (true);
+  				recursion_message.append (construct_name);
+  				recursion_message.append ("%N");
+! 				Result := true
+  			else
+  				from
+  					structure_list.put_right (production);
+--- 30,40 ----
+  			-- Is the construct's definition left-recursive?
+  		do
+  			if structure_list.has (production) then
+! 				global_left_recursion.put (True);
+! 				child_recursion.put (True);
+  				recursion_message.append (construct_name);
+  				recursion_message.append ("%N");
+! 				Result := True
+  			else
+  				from
+  					structure_list.put_right (production);
+***************
+*** 49,58 ****
+  			structure_list.search (production);
+  			structure_list.remove;
+  			structure_list.go_i_th (0)
+! 		end;
+! 
+! feature {CONSTRUCT} -- Implementation
+! 
+  	check_recursion is
+  			-- Check choice construct for left recursion.
+  		local
+--- 51,60 ----
+  			structure_list.search (production);
+  			structure_list.remove;
+  			structure_list.go_i_th (0)
+! 		end; -- left_recursion
+!    
+! feature {CONSTRUCT,TROOPER,YOOCC} -- Implementation
+!    
+  	check_recursion is
+  			-- Check choice construct for left recursion.
+  		local
+***************
+*** 72,79 ****
+  					child_forth
+  				end
+  			end
+! 		end
+! 
+  feature {NONE} -- Implementation
+  
+  	print_children is
+--- 74,81 ----
+  					child_forth
+  				end
+  			end
+! 		end; -- check_recursion
+!    
+  feature {NONE} -- Implementation
+  
+  	print_children is
+***************
+*** 93,107 ****
+  				end
+  			end;
+  			io.new_line
+! 		end; 
+  
+  	expand is
+  			-- Create list of possible choices.
+  		do
+  			expand_next
+! 		end; 
+! 
+! 	parse_body is
+  			-- Try each possible expansion and keep
+  			-- the one that works.
+  		local
+--- 95,109 ----
+  				end
+  			end;
+  			io.new_line
+! 		end; -- print_children 
+  
+  	expand is
+  			-- Create list of possible choices.
+  		do
+  			expand_next
+! 		end; -- expand
+!    
+! 	parse_body (level: INTEGER) is
+  			-- Try each possible expansion and keep
+  			-- the one that works.
+  		local
+***************
+*** 113,119 ****
+  			until
+  				no_components or child_after or retained /= Void
+  			loop
+! 				parse_child;
+  				if child.parsed then
+  					retained := child
+  				else
+--- 115,121 ----
+  			until
+  				no_components or child_after or retained /= Void
+  			loop
+! 				parse_child (level + 1);
+  				if child.parsed then
+  					retained := child
+  				else
+***************
+*** 123,138 ****
+  			end;
+  			complete := retained /= Void;
+  			wipe_out;
+! 		-- A choice, once parsed, is not used as a tree node: it
+! 		-- has only one child which is accessed through 'retained'
+! 		end; 
+! 
+  	in_action is
+  		do
+  			if retained /= Void then
+  				retained.semantics
+  			end
+! 		end;
+  
+  end -- class CHOICE
+   
+--- 125,166 ----
+  			end;
+  			complete := retained /= Void;
+  			wipe_out;
+! 			-- A choice, once parsed, is not used as a tree node: it
+! 			-- has only one child which is accessed through 'retained'
+! 		end; -- parse_body
+!    
+  	in_action is
+  		do
+  			if retained /= Void then
+  				retained.semantics
+  			end
+! 		end; -- in_action
+!    
+! feature -- Displaying
+!    
+! 	display_indented (file: IO_MEDIUM; level: INTEGER) is
+! 			-- Display this construct and all 
+! 			-- of its subconstructs at indent level
+! 			-- 'level'.
+! 		do
+! 			display_indent (file, level);
+! 			file.putstring (construct_name);
+! 			file.putstring (" {CHOICE}");
+! 			if retained = Void then
+! 				file.putstring (" No retained construct");
+! 			else
+! 				file.new_line;
+! 				retained.display_indented (file, level + Indent_step);
+! 			end;			
+! 	end; -- display_indented
+!    
+! 	parse_global_optionals (level: INTEGER) is
+! 			-- Start the parsing process for global_optionals.
+! 		do
+! 			if not (no_globals) then
+! 				parent.parse_global_optionals (level);		
+! 			end
+! 		end; -- parse_global_optionals
+  
+  end -- class CHOICE
+   
+diff -c -P /opt/Eiffel3/library/parse/construct.e ./construct.e
+*** /opt/Eiffel3/library/parse/construct.e	Mon Aug 14 13:53:16 1995
+--- ./construct.e	Fri Aug 18 14:51:58 1995
+***************
+*** 6,13 ****
+  		%and associated semantic actions";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 91/02/06 18:55:16 $";
+! 	revision: "$Revision: 1.5 $"
+  
+  deferred class CONSTRUCT inherit
+  
+--- 6,13 ----
+  		%and associated semantic actions";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 1995/08/18 01:42:00 $";
+! 	revision: "$Revision: 1.3 $"
+  
+  deferred class CONSTRUCT inherit
+  
+***************
+*** 20,62 ****
+  		redefine 
+  			parent, new_cell
+  		end
+! 
+  feature -- Initialization
+  
+  	make is
+  			-- Set up construct.
+  		do
+  			twt_make (Current)
+! 		end;
+! 
+  feature -- Access
+  
+  	document: INPUT is
+! 			-- The document to be parsed
+  		once
+  			!! Result.make
+! 		end;
+! 
+  	production: LINKED_LIST [CONSTRUCT] is 
+! 			-- Right-hand side of the production for the construct
+  		deferred 
+! 		end;
+! 
+  	construct_name: STRING is 
+! 			-- Name of the construct in the grammar
+  		deferred
+! 		end;
+! 
+  feature -- Status report
+! 
+  	is_optional: BOOLEAN;
+! 			-- Is construct optional? 
+! 
+  	left_recursion: BOOLEAN is 
+  			-- Is the construct's definition left-recursive?
+  		deferred 
+! 		end;
+! 
+  	parsed: BOOLEAN;
+  			-- Has construct been successfully parsed?
+  			-- (True for optional components not present)
+--- 20,67 ----
+  		redefine 
+  			parent, new_cell
+  		end
+!    
+! DISPLAYABLE
+!    
+  feature -- Initialization
+  
+  	make is
+  			-- Set up construct.
+  		do
+  			twt_make (Current)
+! 		end; -- make
+!    
+  feature -- Access
+  
+  	document: INPUT is
+! 			-- The document to be parsed.
+  		once
+  			!! Result.make
+! 		end; -- document
+! 	
+  	production: LINKED_LIST [CONSTRUCT] is 
+! 			-- Right-hand side of the production for the construct.
+  		deferred 
+! 		end; -- production
+! 	
+  	construct_name: STRING is 
+! 			-- Name of the construct in the grammar.
+  		deferred
+! 		end; -- construct_name
+!    
+  feature -- Status report
+!    
+! 	no_globals: BOOLEAN 
+! 			-- Will globals be applied to this construct?
+!    
+  	is_optional: BOOLEAN;
+! 			-- Is Current optional? 
+!    
+  	left_recursion: BOOLEAN is 
+  			-- Is the construct's definition left-recursive?
+  		deferred 
+! 		end; -- left_recursion
+!    
+  	parsed: BOOLEAN;
+  			-- Has construct been successfully parsed?
+  			-- (True for optional components not present)
+***************
+*** 71,91 ****
+  			-- Must the left-recursion test also print the production?
+  			-- (Default: no.)
+  		once 
+! 			!! Result.put (false)
+! 		end;
+! 
+  feature -- Status setting
+  
+  	set_optional is
+  			-- Define this construct as optional.
+  		do
+! 			is_optional := true
+  		ensure
+  			optional_construct: is_optional
+! 		end;
+! 
+  feature -- Transformation
+! 
+  	process is
+  			-- Parse a specimen of the construct, then apply
+  			-- semantic actions if parsing successful.
+--- 76,137 ----
+  			-- Must the left-recursion test also print the production?
+  			-- (Default: no.)
+  		once 
+! 			!! Result.put (False)
+! 		end; -- print_mode
+!    
+! feature {CONSTRUCT}
+!    
+! 	complete: BOOLEAN
+! 			-- Has the construct been completely recognized?
+! 			-- (Like `parsed', but in addition the construct,
+! 			-- if optional, must be present.)
+! 		  
+! 	parent_has_no_globals: BOOLEAN is
+! 			-- If parent does not want to parse globals then
+! 			-- neither do their children.	
+! 		do
+! 			-- If this construct is not to parse global_optionals
+! 			-- then do not parse_global_optionals.
+! 			if no_globals then
+! 				Result := True
+! 			else
+! 				-- If this construct has no parents then
+! 				-- whatever this construct says goes.
+! 				if is_root then
+! 					Result := False
+! 				else
+! 					-- If this construct has parents
+! 					-- then test immediate parent to
+! 					-- see whether or not to parse
+! 					-- global_optionals.
+! 					Result := False or parent.parent_has_no_globals
+! 				end;
+! 			end;
+! 		end; -- parent_has_no_globals
+!    
+  feature -- Status setting
+  
+  	set_optional is
+  			-- Define this construct as optional.
++ 			-- If the production does not match the tokens,
++ 			-- the construct will be parsed anyway.
+  		do
+! 			is_optional := True
+  		ensure
+  			optional_construct: is_optional
+! 		end; -- set_optional
+!    
+! 	set_no_globals is
+! 			-- Define this construct as one which there should 
+! 			-- be no parsing of global_optionals
+! 		do
+! 			no_globals := True
+! 		ensure
+! 			do_not_parse_globals: no_globals
+! 		end; -- set_no_globals
+!    
+  feature -- Transformation
+!    
+  	process is
+  			-- Parse a specimen of the construct, then apply
+  			-- semantic actions if parsing successful.
+***************
+*** 94,129 ****
+  			if parsed then
+  				semantics
+  			end
+! 		end;
+! 
+  	parse is
+  			-- Attempt to analyze incoming lexical
+  			-- tokens according to current construct. 
+! 			-- Set `parsed' to true if successful; 
+  			-- return to original position in input otherwise.
+  		local
+  			initial_document_position: INTEGER
+  		do
+  			initial_document_position := document.index;
+! 			parsed := false;
+! 			complete := false;
+! 			committed := false;
+! 			parse_body;
+  			if not complete and is_optional then
+  				document.go_i_th (initial_document_position);
+! 				parsed := not committed
+  			else
+  				parsed := complete
+  			end;                                    
+! 		end;
+! 
+  	commit is
+!             -- If this construct is one among several possible ones,
+!             -- discard the others.
+! 				-- By default this does nothing.
+  		do
+! 		end;
+! 
+  	semantics is
+  			-- Apply semantic actions in order:
+  			-- `pre_action', `in_action', `post_action'.
+--- 140,212 ----
+  			if parsed then
+  				semantics
+  			end
+! 		end; -- process
+!    
+! 	parse_global_optionals (level: INTEGER) is
+! 			-- Start the parsing process for global_optionals.
+! 		local
+! 			pc: CONSTRUCT;
+! 			global_optionals: GLOBAL_OPTIONALS;
+! 		do
+! 			!! global_optionals.make;
+! 			if (not parent_has_no_globals) and (not global_optionals.production.empty) then
+! 				pc := clone (global_list);
+! 				put_component (pc);
+! 				parse_child (level + 1)
+! 				if (child /= Void and then not (child.complete)) then
+! 					remove_child
+! 				end;
+! 			end;
+! 		end; -- parse_global_optionals
+!    
+  	parse is
++ 			-- Start the parsing process for this construct
++ 		do
++ 			parse_indented (0)
++ 		end; -- parse
++   
++ 	parse_indented (level: INTEGER) is
+  			-- Attempt to analyze incoming lexical
+  			-- tokens according to current construct. 
+! 			-- Set `parsed' to True if successful; 
+  			-- return to original position in input otherwise.
+  		local
+  			initial_document_position: INTEGER
+  		do
++ 			debug ("parse") 
++ 				display_indent (io.output, level)
++ 				io.putstring("Attempting to parse ") 
++ 				print_name 
++ 				io.new_line 
++ 			end;
+  			initial_document_position := document.index;
+! 			parsed := False;
+! 			complete := False;
+! 			committed := False;
+! 			parse_body (level + 1);
+  			if not complete and is_optional then
+  				document.go_i_th (initial_document_position);
+! 				parsed := not committed;
+  			else
+  				parsed := complete
+  			end;                                    
+! 			debug ("parse") 
+! 				display_indent (io.output, level)
+! 				if parsed then
+! 					io.putstring(construct_name) io.putstring(" COMPLETE %N"); 
+! 				else
+! 					io.putstring(construct_name) io.putstring(" not complete %N"); 
+! 				end;
+! 			end;
+! 		end; -- parse_indented
+!    
+  	commit is
+! 			-- If this construct is one among several possible ones,
+! 			-- discard the others.
+! 			-- By default this does nothing.
+  		do
+! 		end; -- commit
+!    
+  	semantics is
+  			-- Apply semantic actions in order:
+  			-- `pre_action', `in_action', `post_action'.
+***************
+*** 131,182 ****
+  			pre_action;
+  			in_action;
+  			post_action
+! 		end;
+! 
+  	pre_action is
+! 			-- Semantic action executed before construct is parsed
+! 			-- (nothing by default; may be redefined in descendants).
+  		do
+! 		end;
+! 
+  	post_action is
+! 			-- Semantic action executed after construct is parsed
+! 			-- (nothing by default; may be redefined in descendants).
+! 		do
+! 		end;
+! 
+! 
+! 
+  feature -- Output 
+! 
+  	print_name is
+  			-- Print the construct name on standard output.
+  		do
+! 			io.put_string (construct_name)
+! 		end;
+! 
+! feature {CONSTRUCT} -- Implementation
+! 
+! 	complete: BOOLEAN
+! 			-- Has the construct been completely recognized?
+! 			-- (Like `parsed', but in addition the construct,
+! 			-- if optional, must be present.)
+! 
+  	parent: CONSTRUCT;
+! 			-- Parent of current construct
+! 
+! 	new_cell (v: like item): like item is
+  		do
+  			Result := v
+! 			Result.twt_put (v)
+! 			Result.attach_to_parent (Current)
+! 		end;
+! 
+  	check_recursion is 
+  			-- Check construct for left recursion.
+! 		deferred 
+! 		end;
+! 
+  	expand_all is
+  			-- Used by recursion checking
+  		do
+--- 214,265 ----
+  			pre_action;
+  			in_action;
+  			post_action
+! 		end; -- semantics
+!    
+  	pre_action is
+! 			-- Do nothing here.
+  		do
+! 		end; -- pre_action
+!    
+  	post_action is
+! 			-- Do nothing here.
+! 		do 
+! 		end; -- post_action
+!    
+  feature -- Output 
+!    
+  	print_name is
+  			-- Print the construct name on standard output.
+  		do
+! 			io.putstring (construct_name)
+! 		end; -- print_name
+!    
+! feature {CONSTRUCT,TROOPER,YOOCC} -- Implementation
+!    
+! 	global_list: GLOBAL_LIST is
+! 			-- Optional constructs that may appear anywhere inbetween
+! 			-- constructs. GLOBAL_LIST (REPETITION) is a 
+! 			-- class depicting the optional contructs.
+! 		once
+! 			!! Result.make;
+! 			Result.set_optional;
+! 		end; -- global_list
+!    
+  	parent: CONSTRUCT;
+! 			-- Parent of current construct.
+! 		   
+! 			new_cell (v: like item): like item is
+  		do
+  			Result := v
+! 			Result.twt_put (v);			-- added
+! 			Result.attach_to_parent (Current);	-- added
+! 		end; -- new_cell
+!    
+  	check_recursion is 
+  			-- Check construct for left recursion.
+! 			deferred 
+! 		end; -- check_recursion
+!    
+  	expand_all is
+  			-- Used by recursion checking
+  		do
+***************
+*** 189,214 ****
+  					expand
+  				end
+  			end
+! 		end;
+! 
+  feature {NONE} -- Implementation
+! 
+  	put (c: CONSTRUCT) is
+  			-- Add a construct to the production.
+  		do  
+  			production.put_left (c);
+  			last_sub_construct := c
+! 		end;
+! 
+  	last_sub_construct: CONSTRUCT;
+! 			-- Subconstruct most recently added to the production
+! 
+  	make_optional is
+  			-- Make the last entered subconstruct optional.
+  		do
+  			last_sub_construct.set_optional
+! 		end;
+! 
+  	keyword (s: STRING) is
+  			-- Insert a keyword into the production.
+  		local
+--- 272,297 ----
+  					expand
+  				end
+  			end
+! 		end; -- expand_all
+!    
+  feature {NONE} -- Implementation
+!    
+  	put (c: CONSTRUCT) is
+  			-- Add a construct to the production.
+  		do  
+  			production.put_left (c);
+  			last_sub_construct := c
+! 		end; -- put
+!    
+  	last_sub_construct: CONSTRUCT;
+! 			-- Subconstruct most recently added to the production.
+! 	   
+  	make_optional is
+  			-- Make the last entered subconstruct optional.
+  		do
+  			last_sub_construct.set_optional
+! 		end; -- make_optional
+!    
+  	keyword (s: STRING) is
+  			-- Insert a keyword into the production.
+  		local
+***************
+*** 216,223 ****
+  		do     
+  			!! key.make (s);
+  			put (key)
+! 		end;
+! 
+  	expand_next is
+  			-- Expand the next child of current node
+  			-- after current child.
+--- 299,306 ----
+  		do     
+  			!! key.make (s);
+  			put (key)
+! 		end; -- keyword
+!    
+  	expand_next is
+  			-- Expand the next child of current node
+  			-- after current child.
+***************
+*** 240,254 ****
+  				child_finish;
+  				child_forth
+  			end
+! 		end;
+! 
+  	expand is
+  			-- Create next construct to be parsed.
+  			-- Used by `parse' to build the production
+  			-- that is expected at each node, according to `production'.
+! 		deferred
+! 		end;
+! 
+  	put_component (new: CONSTRUCT) is
+  			-- Add a new component to expand the production.
+  			-- Note that the components are always added in
+--- 323,337 ----
+  				child_finish;
+  				child_forth
+  			end
+! 		end; -- expand_next
+!    
+  	expand is
+  			-- Create next construct to be parsed.
+  			-- Used by `parse' to build the production
+  			-- that is expected at each node, according to `production'.
+! 			deferred
+! 		end; -- expand
+!    
+  	put_component (new: CONSTRUCT) is
+  			-- Add a new component to expand the production.
+  			-- Note that the components are always added in
+***************
+*** 257,264 ****
+  			child_finish;
+  			child_put_right (new);
+  			child_forth
+! 		end;
+! 
+  	raise_syntax_error (s: STRING) is
+  			-- Print error message s.
+  		local
+--- 340,347 ----
+  			child_finish;
+  			child_put_right (new);
+  			child_forth
+! 		end; -- put_component
+!    
+  	raise_syntax_error (s: STRING) is
+  			-- Print error message s.
+  		local
+***************
+*** 272,279 ****
+  				s2.append (parent.construct_name)
+  			end;
+  			document.raise_error (s2)
+! 		end;
+! 
+  	expected_found_error is
+  			-- Print an error message saying what was 
+  			-- expected and what was found.
+--- 355,362 ----
+  				s2.append (parent.construct_name)
+  			end;
+  			document.raise_error (s2)
+! 		end; -- raise_syntax_error
+!    
+  	expected_found_error is
+  			-- Print an error message saying what was 
+  			-- expected and what was found.
+***************
+*** 287,330 ****
+  				err.append ("end of document found")
+  			elseif document.token.string_value.count > 0 then
+  				err.append (document.token.string_value);
+! 				err.append (" found")
+  			end;
+  			raise_syntax_error (err)
+! 		end;
+! 
+  	structure_list: LINKED_LIST [LINKED_LIST [CONSTRUCT]] is
+  			-- List of the structures already examined when
+! 			-- searching for left recursion
+  		once
+  			!! Result.make
+! 		end;
+! 
+  	check_recursion_list: LINKED_LIST [LINKED_LIST [CONSTRUCT]] is
+  			-- List of the structures already examined when
+! 			-- checking for left recursion
+  		once
+  			!! Result.make
+! 		end;
+! 
+  	global_left_recursion: CELL [BOOLEAN] is 
+  			-- Is there any left recursion in the whole program?
+  		once 
+! 			!! Result.put (false)
+! 		end;
+! 
+  	child_recursion: CELL [BOOLEAN] is 
+  			-- Is there any recursion in the whole program?
+  		once 
+! 			!! Result.put (false)
+! 		end;
+! 
+  	recursion_message: STRING is
+  			-- Error message when left recursion has been detected,
+  			-- with all productions involved in the recursion chain
+  		once
+  			!! Result.make (100)
+! 		end;
+! 
+  	message_construction: BOOLEAN is
+  			-- Has the message on left recursion been already printed?
+  		do
+--- 370,417 ----
+  				err.append ("end of document found")
+  			elseif document.token.string_value.count > 0 then
+  				err.append (document.token.string_value);
+! 				err.append (" found at (")
+! 				err.append_integer (document.token.line_number);
+! 				err.append (",");
+! 				err.append_integer (document.token.column_number);
+! 				err.append (")");
+  			end;
+  			raise_syntax_error (err)
+! 		end; -- expected_found_error
+!    
+  	structure_list: LINKED_LIST [LINKED_LIST [CONSTRUCT]] is
+  			-- List of the structures already examined when
+! 			-- searching for left recursion.
+  		once
+  			!! Result.make
+! 		end; -- structure_list
+!    
+  	check_recursion_list: LINKED_LIST [LINKED_LIST [CONSTRUCT]] is
+  			-- List of the structures already examined when
+! 			-- checking for left recursion.
+  		once
+  			!! Result.make
+! 		end; -- check_recursion_list
+!    
+  	global_left_recursion: CELL [BOOLEAN] is 
+  			-- Is there any left recursion in the whole program?
+  		once 
+! 			!! Result.put (False)
+! 		end; -- global_left_recursion
+!    
+  	child_recursion: CELL [BOOLEAN] is 
+  			-- Is there any recursion in the whole program?
+  		once 
+! 			!! Result.put (False)
+! 		end; -- child_recursion
+!    
+  	recursion_message: STRING is
+  			-- Error message when left recursion has been detected,
+  			-- with all productions involved in the recursion chain
+  		once
+  			!! Result.make (100)
+! 		end; -- recursion_message
+!    
+  	message_construction: BOOLEAN is
+  			-- Has the message on left recursion been already printed?
+  		do
+***************
+*** 333,384 ****
+  			if not Result then
+  				if not structure_list.has (production) then
+  					structure_list.put_right (production);
+! 					io.put_string ("Left recursion has been detected ");
+! 					io.put_string ("in the following constructs:%N");
+! 					io.put_string (recursion_message);
+  					io.new_line;
+  					recursion_message.wipe_out;
+! 					Result := true
+  				else
+  					recursion_message.append (construct_name);
+  					recursion_message.append ("%N")
+  				end
+  			elseif Result and not structure_list.has (production) then
+! 				io.put_string ("child.left_recursion = false");
+! 				io.put_string ("		and recursion_visited = false%N")
+  			end
+! 		end;
+! 
+  	in_action is
+  			-- Perform a certain semantic operation.
+  		deferred
+! 		end;
+! 
+! 	parse_body is
+  			-- Perform any special parsing action for a particular
+  			-- type of construct.
+  			-- Call `parse_child' on each child construct.
+  			-- Set `committed' to true if enough has been 
+  			-- recognized to freeze the parse tree built so far.
+! 			-- Set `complete' to true if the whole construct has been
+  			-- correctly recognized.
+  		deferred
+! 		end;
+! 
+! 	parse_child is
+  			-- Parse child recursively to build the tree.
+  			-- An error is output the first time a parse fails 
+  			-- in an uncommitted child of a committed parent 
+  			-- i.e. at the deepest point known to be meaningful.
+  		do
+! 			child.parse;
+  			if child.committed then
+! 				committed := true;
+  			end;
+  			if committed and not (child.parsed or child.committed) then
+  				expected_found_error
+  			end
+! 		end;
+  
+  end -- class CONSTRUCT
+   
+--- 420,471 ----
+  			if not Result then
+  				if not structure_list.has (production) then
+  					structure_list.put_right (production);
+! 					io.putstring ("Left recursion has been detected ");
+! 					io.putstring ("in the following constructs:%N");
+! 					io.putstring (recursion_message);
+  					io.new_line;
+  					recursion_message.wipe_out;
+! 					Result := True
+  				else
+  					recursion_message.append (construct_name);
+  					recursion_message.append ("%N")
+  				end
+  			elseif Result and not structure_list.has (production) then
+! 				io.putstring ("child.left_recursion = false");
+! 				io.putstring ("		and recursion_visited = false%N")
+  			end
+! 		end; -- message_construction
+!    
+  	in_action is
+  			-- Perform a certain semantic operation.
+  		deferred
+! 		end; -- in_action
+!    
+! 	parse_body (level: INTEGER) is
+  			-- Perform any special parsing action for a particular
+  			-- type of construct.
+  			-- Call `parse_child' on each child construct.
+  			-- Set `committed' to true if enough has been 
+  			-- recognized to freeze the parse tree built so far.
+! 			-- Set `complete' to True if the whole construct has been
+  			-- correctly recognized.
+  		deferred
+! 		end; -- parse_body
+!   
+! 	parse_child (level: INTEGER) is
+  			-- Parse child recursively to build the tree.
+  			-- An error is output the first time a parse fails 
+  			-- in an uncommitted child of a committed parent 
+  			-- i.e. at the deepest point known to be meaningful.
+  		do
+! 			child.parse_indented (level + 1);
+  			if child.committed then
+! 				committed := True;
+  			end;
+  			if committed and not (child.parsed or child.committed) then
+  				expected_found_error
+  			end
+! 		end; -- parse_child
+  
+  end -- class CONSTRUCT
+   
+diff -c -P /opt/Eiffel3/library/parse/input.e ./input.e
+*** /opt/Eiffel3/library/parse/input.e	Mon Aug 14 13:53:16 1995
+--- ./input.e	Fri Aug 18 14:51:58 1995
+***************
+*** 4,11 ****
+  		"Handling of input documents through a lexical analyzer";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 90/08/09 14:25:39 $";
+! 	revision: "$Revision: 1.4 $"
+  
+  class INPUT inherit
+  
+--- 4,11 ----
+  		"Handling of input documents through a lexical analyzer";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 1995/08/18 02:33:20 $";
+! 	revision: "$Revision: 1.3 $"
+  
+  class INPUT inherit
+  
+***************
+*** 13,18 ****
+--- 13,20 ----
+  		rename 
+  			item as token,
+  			make as arrayed_list_make
++ 		export
++ 			{ANY} token
+  		end
+  
+  creation
+***************
+*** 25,34 ****
+  			-- Create an empty document
+  		do
+  			arrayed_list_make (0)
+! 		end
+! 
+! feature  -- Access
+! 
+  	analyzer: LEXICAL;
+  			-- Lexical analyzer used
+  
+--- 27,36 ----
+  			-- Create an empty document
+  		do
+  			arrayed_list_make (0)
+! 		end; -- make
+! 	
+! feature -- Access
+! 	
+  	analyzer: LEXICAL;
+  			-- Lexical analyzer used
+  
+***************
+*** 151,165 ****
+  			-- Print error message `s'.
+  		do  
+  			error_message.wipe_out;
+! 			if file_name /= Void then
+! 				error_message.append (file_name); 
+! 			end
+! 			error_message.append (" (line "); 
+! 			error_message.append_integer (token.line_number);
+  			error_message.append ("): "); 
+  			error_message.append (s); 
+! 			io.error.put_string (error_message);
+! 			io.error.new_line
+  		end;
+  
+  feature {NONE}
+--- 153,166 ----
+  			-- Print error message `s'.
+  		do  
+  			error_message.wipe_out;
+! 			error_message.append ("(line "); 
+! 			error_message.append (token.line_number.out);
+  			error_message.append ("): "); 
+  			error_message.append (s); 
+! 			io.put_string ("Error.%N")
+! 			io.put_string (error_message);
+! 			io.new_line
+! 			io.output.flush
+  		end;
+  
+  feature {NONE}
+diff -c -P /opt/Eiffel3/library/parse/keyword.e ./keyword.e
+*** /opt/Eiffel3/library/parse/keyword.e	Mon Aug 14 13:53:16 1995
+--- ./keyword.e	Fri Aug 18 14:51:58 1995
+***************
+*** 5,12 ****
+  		%representing a language keyword or special symbol";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 90/07/27 02:39:58 $";
+! 	revision: "$Revision: 1.2 $"
+  
+  class KEYWORD inherit
+  
+--- 5,12 ----
+  		%representing a language keyword or special symbol";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 1995/08/18 02:36:16 $";
+! 	revision: "$Revision: 1.3 $"
+  
+  class KEYWORD inherit
+  
+***************
+*** 14,19 ****
+--- 14,20 ----
+  		rename
+  			make as construct_make
+  		redefine
++ 			display_indented,
+  			token_correct
+  		end
+  
+***************
+*** 32,44 ****
+  		ensure
+  			construct_name = s;
+  			lex_code = document.keyword_code (s)
+! 		end; 
+! 
+  feature -- Access
+  
+  	construct_name: STRING;
+! 			-- Name of the keyword
+! 
+  	lex_code: INTEGER
+  			-- Code of keyword in the lexical anayser
+  
+--- 33,45 ----
+  		ensure
+  			construct_name = s;
+  			lex_code = document.keyword_code (s)
+! 		end; -- make
+!    
+  feature -- Access
+  
+  	construct_name: STRING;
+! 			-- Name of the keyword.
+! 	   
+  	lex_code: INTEGER
+  			-- Code of keyword in the lexical anayser
+  
+***************
+*** 48,57 ****
+  			-- Is this keyword the active token?
+  		do
+  			Result := document.token.is_keyword (lex_code)
+! 		end; 
+! 
+  	token_type: INTEGER is 0
+! 			-- Unused token type
+  
+  end -- class KEYWORD
+   
+--- 49,76 ----
+  			-- Is this keyword the active token?
+  		do
+  			Result := document.token.is_keyword (lex_code)
+! 		end;  -- token_correct
+!    
+  	token_type: INTEGER is 0
+! 			-- Unused token type.
+!    
+! feature {ANY} -- Displaying
+!    
+! 	display_indented (file: IO_MEDIUM; level: INTEGER) is
+! 			-- Display the keyword name and value.
+! 		do
+! 			display_indent (file, level);
+! 			file.putstring (construct_name);
+! 			file.putstring (" {KEYWORD}");
+! 			if token = Void then
+! 				file.putstring (" No keyword construct stored");
+! 			else
+! 				file.putstring (" value: '");
+! 				file.putstring (token.string_value);
+! 				file.putstring ("'");
+! 			end;
+! 			file.new_line;
+! 		end; -- display_indented	
+  
+  end -- class KEYWORD
+   
+diff -c -P /opt/Eiffel3/library/parse/l_interface.e ./l_interface.e
+*** /opt/Eiffel3/library/parse/l_interface.e	Mon Aug 14 13:53:16 1995
+--- ./l_interface.e	Fri Aug 18 14:51:58 1995
+***************
+*** 4,11 ****
+  		"Interface with the Lexical Library classes";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 90/07/27 02:40:06 $";
+! 	revision: "$Revision: 1.2 $"
+  
+  deferred class L_INTERFACE inherit
+  
+--- 4,11 ----
+  		"Interface with the Lexical Library classes";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 1995/08/18 02:42:36 $";
+! 	revision: "$Revision: 1.3 $"
+  
+  deferred class L_INTERFACE inherit
+  
+***************
+*** 30,38 ****
+  
+  	obtain_analyzer is
+  			-- Build lexical analyzer.
+! 		deferred
+! 		ensure
+! 			analyzer /= Void
+  		end
+  
+  feature {NONE} -- Implementation
+--- 30,38 ----
+  
+  	obtain_analyzer is
+  			-- Build lexical analyzer.
+!                 deferred
+!                 ensure
+! 		      analyzer_set: analyzer /= Void
+  		end
+  
+  feature {NONE} -- Implementation
+diff -c -P /opt/Eiffel3/library/parse/repetition.e ./repetition.e
+*** /opt/Eiffel3/library/parse/repetition.e	Mon Aug 14 13:53:16 1995
+--- ./repetition.e	Fri Aug 18 14:51:58 1995
+***************
+*** 5,12 ****
+  		%of a specified base construct, delimited by a specified separator";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 90/08/30 20:37:38 $";
+! 	revision: "$Revision: 1.3 $"
+  
+  deferred class REPETITION inherit
+  
+--- 5,12 ----
+  		%of a specified base construct, delimited by a specified separator";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 1995/08/18 02:20:46 $";
+! 	revision: "$Revision: 1.4 $"
+  
+  deferred class REPETITION inherit
+  
+***************
+*** 24,34 ****
+  			-- Is the construct's definition left-recursive?
+  		do
+  			if structure_list.has (production) then
+! 				global_left_recursion.put (true);
+! 				child_recursion.put (true);
+  				recursion_message.append (construct_name);
+  				recursion_message.append ("%N");
+! 				Result := true;
+  			else
+  				structure_list.put_right (production);
+  				child_start;
+--- 24,34 ----
+  			-- Is the construct's definition left-recursive?
+  		do
+  			if structure_list.has (production) then
+! 				global_left_recursion.put (True);
+! 				child_recursion.put (True);
+  				recursion_message.append (construct_name);
+  				recursion_message.append ("%N");
+! 				Result := True;
+  			else
+  				structure_list.put_right (production);
+  				child_start;
+***************
+*** 37,54 ****
+  			structure_list.search (production);
+  			structure_list.remove;
+  			structure_list.go_i_th (0)
+! 		end 
+! 
+! feature {CONSTRUCT} -- Implementation
+! 
+  	expand_all is
+  			-- Expand all child constructs.
+  		do
+  			if no_components then
+  				expand
+  			end
+! 		end; 
+! 
+  	check_recursion is
+  			-- Check the sequence for left recursion.
+  		do
+--- 37,54 ----
+  			structure_list.search (production);
+  			structure_list.remove;
+  			structure_list.go_i_th (0)
+! 		end; -- left_recursion 
+!    
+! feature {CONSTRUCT,TROOPER,YOOCC} -- Implementation
+!    
+  	expand_all is
+  			-- Expand all child constructs.
+  		do
+  			if no_components then
+  				expand
+  			end
+! 		end; -- expand_all
+!    
+  	check_recursion is
+  			-- Check the sequence for left recursion.
+  		do
+***************
+*** 61,76 ****
+  				child.expand_all;
+  				child.check_recursion
+  			end
+! 		end 
+! 
+  feature {NONE} -- Implementation
+! 
+  	separator: STRING is 
+  			-- List separator in the descendant,
+! 			-- must be defined as a keyword in the lexical analyzer
+  		deferred 
+! 		end; 
+! 
+  	separator_code: INTEGER is 
+  			-- Code of the keyword-separator; -1 if none
+  			-- (according to lexical code)
+--- 61,85 ----
+  				child.expand_all;
+  				child.check_recursion
+  			end
+! 		end; -- check_recursion 
+!    
+  feature {NONE} -- Implementation
+!    
+!    
+! 	nbr_constructs_required: INTEGER is
+! 			-- Number of constructs required in production
+! 			-- before optional separator for Current to be
+! 			-- parsed correctly.
+! 		do
+! 			Result := 1
+! 		end; -- nbr_constructs_required
+!   
+  	separator: STRING is 
+  			-- List separator in the descendant,
+! 			-- must be defined as a keyword in the lexical analyzer.
+  		deferred 
+! 		end; -- separator
+!    
+  	separator_code: INTEGER is 
+  			-- Code of the keyword-separator; -1 if none
+  			-- (according to lexical code)
+***************
+*** 86,196 ****
+  			else
+  				Result := -1
+  			end
+! 		end;
+! 
+  	commit_on_separator : BOOLEAN is
+! 			-- Is one element of the sequence and a separator enough to
+! 			-- commit the sequence?
+! 			-- (This is true by default, but not where the same
+  			-- production may have different parents with a
+  			-- choice construct as a common ancestor of the parents)
+  		do
+! 			Result := true
+! 		end; 
+! 
+  	has_separator: BOOLEAN is
+  			-- Has the sequence a separator?
+  		do
+  			Result := separator_code /= -1
+! 		end; 
+! 
+  	expand is
+  			-- Create next construct to be parsed and insert it in
+! 			-- the list of the items of the sequence.
+  		local
+  			n: CONSTRUCT
+  		do
+  			n := clone (production.first);
+  			field (n)
+! 		end; 
+  
+! 	parse_body is
+! 			-- Attempt to find a sequence of constructs with separators
+! 			-- starting at current position. Set committed
+! 			-- at first separator if `commit_on_separator' is set.
+  		local
+  			child_found, first_child_found: BOOLEAN;
+  			separator_found, wrong: BOOLEAN
+  		do
+  			from
+! 				child_found := parse_one;
+  				first_child_found := child_found
+  			until
+  				not child_found 
+  			loop
+  				separator_found := false;
+  				child_found := false;
+  				if has_separator then
+  					separator_found := document.token.is_keyword (separator_code);
+  					if separator_found then 
+  						if commit_on_separator then
+! 							committed := true
+  						end;
+  						document.get_token 
+  					end
+  				end;
+! 				if (not has_separator) or separator_found then
+! 					child_found := parse_one
+  				end
+  			end;
+! 			wrong := has_separator and separator_found and not child_found;
+! 			complete := first_child_found and not (committed and wrong)
+! 		end; 
+! 
+! 	parse_one: BOOLEAN is
+  			-- Parse one element of the sequence and
+! 			-- return true if successful.
+  		local
+  			tmp_committed: BOOLEAN
+  		do
+  			expand;
+  			if has_separator then
+! 				parse_child
+  			else
+  				tmp_committed := committed;
+  				committed := False;
+! 				parse_child;
+  				committed := committed or tmp_committed
+  			end;
+  			Result := child.parsed;
+  			if not child.parsed then
+  				remove_child
+  			end
+! 		end; 
+! 
+  	in_action is
+  			-- Execute semantic actions on current construct
+  			-- by executing actions on children in sequence.
+  		do
+  			if not no_components then
+! 				from
+! 					child_start
+! 				until
+! 					child_after
+! 				loop
+! 					child.semantics;
+! 					middle_action;
+! 					child_forth
+! 				end
+  			end
+! 		end; 
+! 
+  	middle_action is
+  			-- Execute this after parsing each child.
+! 			-- Does nothing by default; may be redefined in descendants.
+! 		do
+! 		end;
+! 
+  	print_children is
+  			-- Print content of sequence,
+  			-- optional are between square brackets.
+--- 95,233 ----
+  			else
+  				Result := -1
+  			end
+! 		end; -- separator_code
+!    
+  	commit_on_separator : BOOLEAN is
+! 			-- Is one element of the sequence and a separator 
+! 			-- enough to commit the sequence?
+! 			-- (This is True by default, but not where the same
+  			-- production may have different parents with a
+  			-- choice construct as a common ancestor of the parents)
+  		do
+! 			Result := True
+! 		end; -- commit_on_separator
+!    
+  	has_separator: BOOLEAN is
+  			-- Has the sequence a separator?
+  		do
+  			Result := separator_code /= -1
+! 		end; -- has_separator
+!    
+  	expand is
+  			-- Create next construct to be parsed and insert it in
+! 			-- the list of the elements of the sequence.
+  		local
+  			n: CONSTRUCT
+  		do
+  			n := clone (production.first);
+  			field (n)
+! 		end; -- expand
+  
+! 	optional_separator: BOOLEAN is
+! 			-- Is the separator for this construct optional.
+! 			-- If 'yes' then the class will still attempt to
+! 			-- parse a repitition construct, otherwise, the absence
+! 			-- of the separator will infer the conclusion of the
+! 			-- construct.    
+! 			-- Non-optional separators imply the standard version
+! 			-- of this class as supported by ETL.
+! 			-- Optional separators imply a new implementation 
+! 			-- of this class.
+! 		do
+! 			Result := false
+! 		end; -- optional_separator
+!    
+! 	parse_body (level: INTEGER) is
+! 			-- Attempt to find a sequence of constructs with 
+! 			-- separators starting at current position. Set 
+! 			-- committed at first separator if 
+! 			-- `commit_on_separator' is set.
+  		local
+  			child_found, first_child_found: BOOLEAN;
+  			separator_found, wrong: BOOLEAN
++ 			nbr_constructs_found: INTEGER
+  		do
+  			from
+! 				child_found := parse_one (level + 1);
+  				first_child_found := child_found
+  			until
+  				not child_found 
+  			loop
++ 				nbr_constructs_found := nbr_constructs_found + 1
+  				separator_found := false;
+  				child_found := false;
+  				if has_separator then
+  					separator_found := document.token.is_keyword (separator_code);
+  					if separator_found then 
+  						if commit_on_separator then
+! 							committed := True
+  						end;
+  						document.get_token 
++ 						if (not no_globals) then
++ 							parse_global_optionals (level + 1)
++ 						end;
+  					end
+  				end;
+! 				-- to account for repitition constructs that have an optional
+! 				-- separator. 
+! 				if (not has_separator) or 
+! 					optional_separator or separator_found then
+! 					child_found := parse_one (level + 1)
+  				end
+  			end;
+! 			-- to account for the optional_separator case.
+! 			wrong := has_separator and (not optional_separator) 
+! 				and separator_found and not child_found;
+! 			-- to account for REPETITION constructs that require more than one 
+! 			-- construct to be found in order for the construct to be complete
+! 			complete := nbr_constructs_found >= nbr_constructs_required 
+! 				and not (committed and wrong)
+! 		end; -- parse_body
+!    
+! 	parse_one (level: INTEGER): BOOLEAN is
+  			-- Parse one element of the sequence and
+! 			-- return True if successful.
+  		local
+  			tmp_committed: BOOLEAN
+  		do
+  			expand;
+  			if has_separator then
+! 				parse_child (level + 1)
+  			else
+  				tmp_committed := committed;
+  				committed := False;
+! 				parse_child (level + 1);
+  				committed := committed or tmp_committed
+  			end;
+  			Result := child.parsed;
+  			if not child.parsed then
+  				remove_child
+  			end
+! 		end; -- parse_one
+!    
+  	in_action is
+  			-- Execute semantic actions on current construct
+  			-- by executing actions on children in sequence.
+  		do
+  			if not no_components then
+! 			from
+! 				child_start
+! 			until
+! 				child_after
+! 			loop
+! 				child.semantics;
+! 				middle_action;
+! 				child_forth
+  			end
+! 			end
+! 		end; -- in_action
+!    
+  	middle_action is
+  			-- Execute this after parsing each child.
+! 			-- Do nothing here.
+! 		do 
+! 		end; -- middle_action
+!    
+  	print_children is
+  			-- Print content of sequence,
+  			-- optional are between square brackets.
+***************
+*** 212,219 ****
+  				print_keyword
+  			end;
+  			io.new_line
+! 		end; 
+! 
+  	print_keyword is
+  			-- Print separator string.
+  		do
+--- 249,256 ----
+  				print_keyword
+  			end;
+  			io.new_line
+! 		end; -- print_children
+!    
+  	print_keyword is
+  			-- Print separator string.
+  		do
+***************
+*** 222,227 ****
+--- 259,285 ----
+  			io.put_string ("%" ")
+  		end 
+  
++ feature {ANY} -- Displaying
++    
++ 	display_indented (file: IO_MEDIUM; level: INTEGER) is
++ 			-- Display this construct and all 
++ 			-- of its subconstructs at indent level
++ 			-- 'level'.
++ 		do
++ 			from
++ 				child_start;
++ 				display_indent (file, level);
++ 				file.putstring (construct_name);
++ 				file.putstring (" {REPETITION}");
++ 				file.new_line;
++ 			until
++ 				no_components or child_after
++ 			loop
++ 				child.display_indented (file, level + Indent_step);
++ 				child_forth
++ 			end;
++ 		end; -- display_indented
++    
+  end -- class REPETITION
+   
+  
+Only in /opt/Eiffel3/library/parse/: sequences.e
+diff -c -P /opt/Eiffel3/library/parse/terminal.e ./terminal.e
+*** /opt/Eiffel3/library/parse/terminal.e	Mon Aug 14 13:53:16 1995
+--- ./terminal.e	Fri Aug 18 14:51:58 1995
+***************
+*** 4,11 ****
+  		"Constructs to be parsed by lexical analysis classes";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 90/07/27 02:40:21 $";
+! 	revision: "$Revision: 1.2 $"
+  
+  deferred class TERMINAL  inherit
+  
+--- 4,11 ----
+  		"Constructs to be parsed by lexical analysis classes";
+  
+  	status: "See notice at end of class";
+! 	date: "$Date: 1995/08/18 02:39:54 $";
+! 	revision: "$Revision: 1.3 $"
+  
+  deferred class TERMINAL  inherit
+  
+***************
+*** 20,56 ****
+  feature -- Access
+  
+  	token: TOKEN; 
+! 			-- Token associated with terminal
+! 
+  feature -- Status report
+  
+  	token_type: INTEGER is
+  			-- Token code associated with terminal
+  		deferred 
+! 		end 
+! 
+  feature {NONE} -- Implementation
+  
+  	production: LINKED_LIST [CONSTRUCT] is
+  			-- Void
+  			-- (Meaningless for terminal constructs)
+  		once 
+! 		end; 
+! 
+  	left_recursion: BOOLEAN is false;
+  
+  	check_recursion is
+  			-- Do nothing.
+  			-- (Meaningless for terminal constructs)
+  		do
+! 		end; 
+! 
+  	expand is
+  			-- Do nothing.
+  		do
+! 		end; 
+! 
+! 	parse_body is
+  			-- Parse a terminal construct.
+  		do
+  			-- From Kim Walden if token_correct or is_optional then
+--- 20,56 ----
+  feature -- Access
+  
+  	token: TOKEN; 
+! 			-- Token associated with terminal.
+!    
+  feature -- Status report
+  
+  	token_type: INTEGER is
+  			-- Token code associated with terminal
+  		deferred 
+! 		end; -- token_type 
+!    
+  feature {NONE} -- Implementation
+  
+  	production: LINKED_LIST [CONSTRUCT] is
+  			-- Void
+  			-- (Meaningless for terminal constructs)
+  		once 
+! 		end; -- production
+!    
+  	left_recursion: BOOLEAN is false;
+  
+  	check_recursion is
+  			-- Do nothing.
+  			-- (Meaningless for terminal constructs)
+  		do
+! 		end; -- check_recursion
+!    
+  	expand is
+  			-- Do nothing.
+  		do
+! 		end; -- expand
+!    
+! 	parse_body (level: INTEGER) is
+  			-- Parse a terminal construct.
+  		do
+  			-- From Kim Walden if token_correct or is_optional then
+***************
+*** 58,83 ****
+  				token := document.token;
+  				document.get_token;
+  				complete := true
+  			else
+  				complete := false
+  			end
+! 		end; 
+! 
+  	token_correct: BOOLEAN is
+  			-- Is token recognized?
+  		do  
+  			Result := document.token.type = token_type
+! 		end; 
+! 
+!    action is
+  			-- To be redefined in descendants.
+  		do
+! 		end; 
+! 
+  	in_action is
+  			-- Do nothing.
+  		do
+! 		end 
+  
+  end -- class TERMINAL
+   
+--- 58,189 ----
+  				token := document.token;
+  				document.get_token;
+  				complete := true
++ 				if (not no_globals) then
++ 					parent.parse_global_optionals(level);
++ 				end
+  			else
+  				complete := false
+  			end
+! 		end; -- parse_body
+!    
+  	token_correct: BOOLEAN is
+  			-- Is token recognized?
+  		do  
+  			Result := document.token.type = token_type
+! 		end; -- token_correct
+!    
+! 	action is
+  			-- To be redefined in descendants.
+  		do
+! 		end; -- action
+!    
+  	in_action is
+  			-- Do nothing.
++ 		do 
++ 		end; -- in_action 
++    
++ feature -- displaying
++    
++ 	display_indented (file: IO_MEDIUM; level: INTEGER) is
++ 			-- Display this construct and all 
++ 			-- of its subconstructs at indent level
++ 			-- 'level'.
+  		do
+! 			display_indent (file, level);
+! 			file.putstring (construct_name);
+! 			file.putstring (" {TERMINAL}");
+! 			if token = Void then
+! 				io.putstring (" No terminal construct stored");
+! 			else
+! 				file.putstring (" (");
+! 				file.putint (token.line_number);
+! 				file.putstring (",");
+! 				file.putint (token.column_number);
+! 				file.putstring (")");
+! 				file.putstring (" value: '");
+! 				file.putstring (string_quoted (token.string_value));
+! 				file.putstring ("'");
+! 			end;
+! 			file.new_line;
+! 		end; -- display_indented
+!    
+! feature {NONE} -- Implementation
+!    
+! 	string_quoted (s: STRING): STRING is
+! 			-- Answer a string that is a representation of `s' with all
+! 			-- control characters quoted with Eiffel special character codes.
+! 		require
+! 			valid_string: s /= Void
+! 		local
+! 			current_index: INTEGER
+! 		do
+! 			Result := clone (s)
+! 			from 
+! 				current_index := 1
+! 			until
+! 				current_index > Result.count
+! 			loop
+! 				-- check if the current character is a control character
+! 				if is_control_character (Result.item (current_index)) then
+! 				-- replace it with its escaped code
+! 					Result.replace_substring (escaped_code (Result.item (current_index)), 
+! 						current_index, current_index) 
+! 						-- skip past the new control character quote 
+! 						current_index := current_index + 2
+! 				else
+! 						-- skip to next character
+! 						current_index := current_index + 1
+! 				end
+! 			end   
+! 		ensure
+! 			new_string: s /= Result
+! 		end; -- string_quoted
+!    
+! 	is_control_character (c: CHARACTER): BOOLEAN is
+! 			-- Is `c' a recognised control character that has to be excaped
+! 			-- within a string?
+! 		do
+! 			Result := ( c = '%B' 
+! 				or else c = '%F' 
+! 				or else c = '%N'
+! 				or else c = '%R'
+! 				or else c = '%T'
+! 				or else c = '%U'
+! 				or else c = '%%'
+! 				or else c = '%"') -- " clean up formatting (emacs)  
+! 		end -- is_control_character 
+!   
+! 	escaped_code (c: CHARACTER): STRING is
+! 			-- Answer the string consisting of the control character's
+! 			-- escape code.
+! 		require
+! 			is_control_character: is_control_character (c)
+! 		do
+! 			!! Result.make (2)
+! 			inspect c
+! 			when '%B' then
+! 				Result := "%%B"
+! 			when '%F' then
+! 				Result := "%%F"
+! 			when '%N' then
+! 				Result := "%%N"
+! 			when '%R' then
+! 				Result := "%%R"
+! 			when '%T' then
+! 				Result := "%%T"
+! 			when '%U' then
+! 				Result := "%%U"
+! 			when '%%' then
+! 				Result := "%%"
+! 			when '%"' then -- " clean up formatting (emacs)
+! 				Result := "%%%""
+! 			else
+! 				-- otherwise it is just the same character
+! 				Result.extend (c)
+! 			end
+! 		ensure
+! 			two_character_result: Result.count = 2
+! 		end; -- escaped_code
+  
+  end -- class TERMINAL
+   
